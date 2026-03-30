@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-13
+    runs-on: macos-14
 
     steps:
       - name: Checkout
@@ -16,10 +16,18 @@ jobs:
           submodules: recursive
 
       - name: Setup Theos
-        uses: nicklausw/theos-action@v7
+        uses: beerpiss/theos-action@v1
+        with:
+          cache: true
+          cache-dir-theos: ${{ github.workspace }}/theos
+          cache-dir-sdks: ${{ github.workspace }}/theos/sdks
 
       - name: Build IPA
-        run: make package FINALPACKAGE=1
+        run: |
+          rm -f packages/*
+          make package FINALPACKAGE=1
+        env:
+          THEOS: ${{ github.workspace }}/theos
 
       - name: List packages
         run: ls -la packages/ || echo "No packages dir"
