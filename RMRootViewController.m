@@ -1,4 +1,4 @@
-#import <Foundation/Foundation.h>
+﻿#import <Foundation/Foundation.h>
 #import <NetworkExtension/NetworkExtension.h>
 #import <NotificationCenter/NotificationCenter.h>
 
@@ -79,7 +79,7 @@
 
 	self->_connectButton = [RMStartStopButton buttonWithType:UIButtonTypeCustom];
 	self->_connectButton.translatesAutoresizingMaskIntoConstraints = NO;
-	[self->_connectButton addTarget:self action:@selector(connectButtonTapped:) forControlEvents:UIControlEventPrimaryActionTriggered];
+	[self->_connectButton addTarget:self action:@selector(connectButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
 	[[NSNotificationCenter defaultCenter]
 		addObserver:self
 		   selector:@selector(vpnStatusDidChange:)
