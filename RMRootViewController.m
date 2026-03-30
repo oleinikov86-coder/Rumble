@@ -1,3 +1,6 @@
+#import "RMRootViewController.h"
+#import <NetworkExtension/NetworkExtension.h>
+
 @implementation RMRootViewController
 + (NSArray<NSString *> *)shellSplit:(NSString *)string {
 	NSMutableArray<NSString *> * tokens = [NSMutableArray<NSString *> array];
