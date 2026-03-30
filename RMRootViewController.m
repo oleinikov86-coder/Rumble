@@ -1,9 +1,3 @@
-﻿#import <Foundation/Foundation.h>
-#import <NetworkExtension/NetworkExtension.h>
-#import <NotificationCenter/NotificationCenter.h>
-
-#import "RMRootViewController.h"
-
 @implementation RMRootViewController
 + (NSArray<NSString *> *)shellSplit:(NSString *)string {
 	NSMutableArray<NSString *> * tokens = [NSMutableArray<NSString *> array];
@@ -20,7 +14,6 @@
 	for (NSUInteger i = 0; i < string.length; ++i)
 	{
 		unichar c = chars[i];
-
 		if (escaping)
 		{
 			[current appendString:[NSString stringWithCharacters:&c length:1]];
@@ -54,29 +47,34 @@
 		}
 	}
 	free(chars);
-
 	if (current.length != 0 || lastCloseQuoteIndex == string.length - 1)
 	{
 		[tokens addObject:current];
 	}
-
 	NSLog(@"shellSplit result: %@", tokens);
 	return tokens;
 }
 
+- (void)showDebugAlert:(NSString *)title message:(NSString *)msg {
+	dispatch_async(dispatch_get_main_queue(), ^{
+		UIAlertController *a = [UIAlertController alertControllerWithTitle:title message:msg preferredStyle:UIAlertControllerStyleAlert];
+		[a addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+		UIViewController *r = [UIApplication sharedApplication].keyWindow.rootViewController;
+		while (r.presentedViewController) r = r.presentedViewController;
+		[r presentViewController:a animated:YES completion:nil];
+	});
+}
+
 - (void)loadView {
-	// [super loadView];
 	self.view = [[UIView alloc] init];
 	if ([UIColor respondsToSelector:@selector(systemBackgroundColor)])
 	{
-		// Use 'class' to bypass compiler API check
 		self.view.backgroundColor = [[UIColor class] systemBackgroundColor];
 	}
 	else
 	{
 		self.view.backgroundColor = [UIColor whiteColor];
 	}
-
 	self->_connectButton = [RMStartStopButton buttonWithType:UIButtonTypeCustom];
 	self->_connectButton.translatesAutoresizingMaskIntoConstraints = NO;
 	[self->_connectButton addTarget:self action:@selector(connectButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
@@ -86,7 +84,6 @@
 		       name:NEVPNStatusDidChangeNotification
 		     object:nil];
 	[self.view addSubview:self->_connectButton];
-
 	NSLayoutConstraint *buttonSizeConstraint_Width = [self->_connectButton.widthAnchor constraintEqualToAnchor:self.view.widthAnchor multiplier:0.5];
 	buttonSizeConstraint_Width.priority = UILayoutPriorityDefaultHigh;
 	NSLayoutConstraint *buttonSizeConstraint_Height = [self->_connectButton.widthAnchor constraintEqualToAnchor:self.view.heightAnchor multiplier:0.5];
@@ -102,83 +99,70 @@
 }
 
 - (void)loadManager:(void (^)(NETunnelProviderManager *))withManager {
+	[self showDebugAlert:@"[1] loadManager" message:@"Calling loadAllFromPreferences..."];
 	[NETunnelProviderManager loadAllFromPreferencesWithCompletionHandler:
 		^(NSArray<NETunnelProviderManager *> * _Nullable managers, NSError * _Nullable error) {
 		if (error)
 		{
-			NSLog(@"loadAllFromPreferences error: %@", error);
+			[self showDebugAlert:@"[1] ERROR" message:[NSString stringWithFormat:@"loadAll: %@", error]];
 			return;
 		}
-
+		[self showDebugAlert:@"[2] OK" message:[NSString stringWithFormat:@"Found %lu managers", (unsigned long)managers.count]];
 		NETunnelProviderManager *mgr = managers.lastObject;
 		NETunnelProviderProtocol *prot = nil;
 		if (mgr)
 		{
-			/* There is existing manager. Is it enabled? */
 			if (mgr.enabled)
 			{
-				/* If it is then just load it */
 				[mgr loadFromPreferencesWithCompletionHandler:
 					^(NSError * _Nullable error) {
-						if (error)
-						{
-							NSLog(@"loadFromPreferences error: %@", error);
-						}
-
+						if (error) [self showDebugAlert:@"[3] ERROR" message:[NSString stringWithFormat:@"load: %@", error]];
 						withManager(mgr);
 					}];
 				return;
 			}
 			else
 			{
-				/* If it isn't then enable it & save the profile */
 				mgr.enabled = YES;
 			}
 		}
 		else
 		{
-			/* No manager - create new one */
 			mgr = [[NETunnelProviderManager alloc] init];
 			prot = [[NETunnelProviderProtocol alloc] init];
 			mgr.protocolConfiguration = prot;
-
 			mgr.localizedDescription = @"Rumble";
 			prot.providerBundleIdentifier = @"com.rpcsx.rumble.ext";
 			prot.serverAddress = @"localhost";
 			mgr.enabled = YES;
 		}
-
 		[mgr saveToPreferencesWithCompletionHandler:^(NSError * _Nullable error) {
-
 			if (error)
 			{
-				NSLog(@"saveToPreferences error: %@", error);
+				[self showDebugAlert:@"[4] ERROR" message:[NSString stringWithFormat:@"save: %@", error]];
 				return;
 			}
-
 			[mgr loadFromPreferencesWithCompletionHandler:
 				^(NSError * _Nullable error) {
 					if (error)
 					{
-						NSLog(@"loadFromPreferences error: %@", error);
+						[self showDebugAlert:@"[4b] ERROR" message:[NSString stringWithFormat:@"reload: %@", error]];
 						return;
 					}
-
 					withManager(mgr);
 				}];
 		}];
-
 	}];
 }
 
 - (void)connectButtonTapped:(id)sender {
+      [self showDebugAlert:@"[0] BUTTON OK" message:@"Button tap received!"];
       [self loadManager: ^(NETunnelProviderManager *mgr)
       {
 	      NEVPNStatus status = mgr.connection.status;
-	      NSLog(@"connectButton: VPN status is: %ld", (long)status);
+	      [self showDebugAlert:@"[5] Manager" message:[NSString stringWithFormat:@"VPN status: %ld", (long)status]];
 	      if (status != NEVPNStatusConnected)
 	      {
-		      NSLog(@"Starting VPN tunnel...");
 		      NSError *startError;
 		      NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
 		      NSDictionary * options = @{
@@ -189,20 +173,19 @@
 		      };
 		      [mgr.connection startVPNTunnelWithOptions:options andReturnError:&startError];
 		      if (startError) {
-			      NSLog(@"startVPNTunnel error: %@", startError.localizedDescription);
+			      [self showDebugAlert:@"[6] ERROR" message:[NSString stringWithFormat:@"startVPN: %@", startError]];
+		      } else {
+			      [self showDebugAlert:@"[6] OK" message:@"VPN start requested!"];
 		      }
-		      /* Prevent connections from leaking */
-		      [[NSNotificationCenter defaultCenter]
-			      removeObserver:self];
+		      [[NSNotificationCenter defaultCenter] removeObserver:self];
 		      [[NSNotificationCenter defaultCenter]
 			      addObserver:self
-				 selector:@selector(vpnStatusDidChange:)
-				     name:NEVPNStatusDidChangeNotification
-				   object:mgr.connection];
+			         selector:@selector(vpnStatusDidChange:)
+			             name:NEVPNStatusDidChangeNotification
+			           object:mgr.connection];
 	      }
 	      else
 	      {
-		      NSLog(@"Stopping VPN tunnel...");
 		      [mgr.connection stopVPNTunnel];
 	      }
       }];
@@ -210,14 +193,9 @@
 
 - (void)vpnStatusDidChange:(NSNotification *)notification {
 	NETunnelProviderSession *session = (NETunnelProviderSession *)[notification object];
-	if (!session)
-	{
-		return;
-	}
-
+	if (!session) return;
 	NEVPNStatus status = session.status;
-
-	NSLog(@"vpnStatusDidChange: %ld, object: %@", (long)status, [notification object]);
+	NSLog(@"vpnStatusDidChange: %ld", (long)status);
 	switch (status)
 	{
 	    case NEVPNStatusInvalid:
