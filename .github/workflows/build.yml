@@ -2,33 +2,30 @@ name: Build Rumble IPA
 
 on:
   workflow_dispatch:
-    push:
-        branches: [master]
+  push:
+    branches: [master]
 
-        jobs:
-          build:
-              runs-on: macos-13
+jobs:
+  build:
+    runs-on: macos-13
 
-                      steps:
-                            - name: Checkout
-                                    uses: actions/checkout@v4
-                                            with:
-                                                      submodules: recursive
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-                                                                  - name: Setup Theos
-                                                                          uses: nicklausw/theos-action@v7
+      - name: Setup Theos
+        uses: nicklausw/theos-action@v7
 
-                                                                                      - name: Build IPA
-                                                                                              run: |
-                                                                                                        export THEOS_PACKAGE_SCHEME=rootless
-                                                                                                                  make package FINALPACKAGE=1 THEOS_PACKAGE_SCHEME=rootless
-                                                                                                                        
-                                                                                                                              - name: List packages
-                                                                                                                                      run: ls -la packages/ || echo "No packages dir"
-                                                                                                                                            
-                                                                                                                                                  - name: Upload IPA
-                                                                                                                                                          uses: actions/upload-artifact@v4
-                                                                                                                                                                  with:
-                                                                                                                                                                            name: Rumble-IPA
-                                                                                                                                                                                      path: packages/*
-                                                                                                                                                                                      
+      - name: Build IPA
+        run: make package FINALPACKAGE=1
+
+      - name: List packages
+        run: ls -la packages/ || echo "No packages dir"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rumble-IPA
+          path: packages/*
