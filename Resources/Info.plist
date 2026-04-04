@@ -40,7 +40,8 @@
 		</dict>
 	</dict>
 	<key>CFBundleIdentifier</key>
-	<string>com.rpcsx.rumble</string>
+	    <string>app.valley6976.badger3313</string>
+
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>
