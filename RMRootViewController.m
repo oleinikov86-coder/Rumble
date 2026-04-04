@@ -135,7 +135,7 @@
 			prot = [[NETunnelProviderProtocol alloc] init];
 			mgr.protocolConfiguration = prot;
 			mgr.localizedDescription = @"Rumble";
-			prot.providerBundleIdentifier = @"com.rpcsx.rumble.ext";
+			        prot.providerBundleIdentifier = @"app.valley6976.badger3313.ext";
 			prot.serverAddress = @"localhost";
 			mgr.enabled = YES;
 		}
